@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FunctionGraph 动漫头像制作</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: repeating-linear-gradient(45deg, #ddd 0 2px, transparent 2px 4px),
+                repeating-linear-gradient(-45deg, #ddd 0 2px, transparent 2px 4px);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        p.description {
+            color: #666;
+        }
+
+        #upload-button {
+            padding: 15px 30px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+
+        .image-container {
+            display: flex;
+            margin-top: 50px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-box {
+            margin: 0 40px;
+            padding: 0;
+            width: 500px;
+            height: 500px;
+            display: flex;
+            flex-direction: row;
+            position: relative;
+            letter-spacing: .3px;
+            padding: 10px;
+            border-radius: 10px;
+            transition: background-color .3s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            
+        }
+
+        #original-image-box,
+        #preview-container {
+            border: 2px dashed #6dcff6;
+            border-radius: 10px;
+            width: 480px;
+            height: 480px;
+        }
+
+        .but-box {
+            margin: 0px 30px;
+            padding: 0;
+            width: 500px;
+            display: flex;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .image-box img {
+            height: 100%;
+            max-width: 100%;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .size-warning {
+            font-size: 20px;
+            color: orange;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 20px 40px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+           
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        h1 {
+            font-size: 40px;
+        }
+
+        .triangle-arrow {
+            width: 0;
+            height: 0;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-left: 30px solid blue;
+        }
+
+        .loading-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.1);
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 999;
+        }
+
+        .loading-text {
+            font-size: 30px;
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>动漫风格头像制作案例：用户上传自拍照片，调用华为云上算力，一键生成动漫风格人
+        物头像。</h1>
+    <input type="file" id="image-input" style="display: none;">
+    <button id="upload-button">请上传照片</button>
+    <p class="size-warning">上传小于 6MB 的图片。</p>
+    <p class="error-message" id="size-error"></p>
+    <div class="image-container">
+        <div class="image-box">
+            <div id="original-image-box">
+            </div>
+        </div>
+        <div class="triangle-arrow"></div>
+        <div class="image-box">
+            <div id="preview-container">
+            </div>
+        </div>
+    </div>
+    <div class="image-container">
+        <div class="but-box">
+            原图
+        </div>
+        <div class="but-box">
+            效果图
+        </div>
+    </div>
+    <div class="loading-mask" id="loading-mask">
+        <p class="loading-text">照片生成中...</p>
+    </div>
+    <script>
+        const uploadButton = document.getElementById('upload-button');
+ const imageInput = document.getElementById('image-input');
+ const originalImageBox = document.getElementById('original-image-box');
+ const imagePreview = document.getElementById("preview-container");
+ const sizeError = document.getElementById('size-error');
+
+ const sizeWarning = document.querySelector('.size-warning');
+ const loadingMask = document.getElementById('loading-mask');
+ uploadButton.addEventListener('click', () => {
+ imageInput.click();
+ });
+ imageInput.addEventListener('change', () => {
+ const file = imageInput.files[0];
+ if (file) {
+ if (file.size > 6 * 1024 * 1024) {
+ sizeError.textContent = '图片大小不能超过 6MB。';
+ sizeWarning.textContent = '';
+ return;
+ }
+ const img = document.createElement('img');
+ img.src = URL.createObjectURL(file);
+ originalImageBox.innerHTML = '';
+ originalImageBox.appendChild(img);
+ if (!file) {
+ console.log("!file ")
+ return;
+ }
+ const formData = new FormData();
+ formData.append("image", file);
+ loadingMask.style.display = 'flex';
+ fetch("/carton/upload", {
+ method: "POST",
+ body: formData,
+ })
+ .then((response) => response.text())
+ .then((data) => {
+let parsedObject;
+ try {
+ parsedObject = JSON.parse(data);
+ } catch (error) {
+ console.error('JSON 解析错误：', error);
+ parsedObject = null; // 或者其他默认值，根据你的需求设置
+ 
+ }
+ const animeImgElement = document.createElement('img');
+ animeImgElement.src = "data:image/png;base64," +
+ parsedObject.results[0];
+ imagePreview.innerHTML = '';
+ imagePreview.appendChild(animeImgElement);
+ loadingMask.style.display = 'none';
+ })
+ .catch((error) => {
+ loadingMask.style.display = 'none';
+ console.error(error);
+ alert("处理失败");
+ });
+ }
+ });
+    </script>
+</body>
+
+</html>
